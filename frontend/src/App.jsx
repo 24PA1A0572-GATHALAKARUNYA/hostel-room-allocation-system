@@ -1,6 +1,9 @@
 import { useState, createContext, useContext, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Rooms from './pages/Rooms';
@@ -27,13 +30,15 @@ function AppProviders({ children }) {
 
   return (
     <ToastCtx.Provider value={addToast}>
-      {children}
-      <Toast toasts={toasts} />
+      <AuthProvider>
+        {children}
+        <Toast toasts={toasts} />
+      </AuthProvider>
     </ToastCtx.Provider>
   );
 }
 
-// ── App Layout ─────────────────────────────────────────────────────────────────
+// ── Authenticated App Layout ──────────────────────────────────────────────────
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -59,10 +64,38 @@ function AppLayout() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/students" element={<Students />} />
-          <Route path="/rooms" element={<Rooms />} />
-          <Route path="/allocations" element={<Allocations />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/students"
+            element={
+              <ProtectedRoute>
+                <Students />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rooms"
+            element={
+              <ProtectedRoute>
+                <Rooms />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/allocations"
+            element={
+              <ProtectedRoute>
+                <Allocations />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
@@ -75,7 +108,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppProviders>
-        <AppLayout />
+        <Routes>
+          {/* Public Login Route */}
+          <Route path="/login" element={<Login />} />
+          {/* Protected Main Layout */}
+          <Route path="/*" element={<AppLayout />} />
+        </Routes>
       </AppProviders>
     </BrowserRouter>
   );

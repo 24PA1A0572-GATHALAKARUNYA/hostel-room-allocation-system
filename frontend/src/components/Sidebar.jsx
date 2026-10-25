@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   {
@@ -46,6 +47,15 @@ const navItems = [
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    if (onClose) onClose();
+  };
+
   return (
     <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
@@ -69,7 +79,30 @@ export default function Sidebar({ isOpen, onClose }) {
       </nav>
 
       <div className="sidebar-footer">
-        College Hostel Management
+        {user && (
+          <div className="sidebar-user-card">
+            <div className="sidebar-avatar">
+              {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
+            </div>
+            <div className="sidebar-user-info">
+              <span className="sidebar-user-name">{user.name || 'Hostel Admin'}</span>
+              <span className="sidebar-user-role">{user.role ? user.role.toUpperCase() : 'ADMIN'}</span>
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          className="sidebar-logout-btn"
+          onClick={handleLogout}
+          title="Sign Out of Portal"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span>Sign Out</span>
+        </button>
       </div>
     </aside>
   );

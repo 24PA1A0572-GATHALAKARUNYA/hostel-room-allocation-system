@@ -8,35 +8,60 @@ const app = express();
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(express.json());
 
+const envOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((url) => url.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
 const allowedOrigins = [
   'http://localhost:5173',
-  process.env.FRONTEND_URL,
-].filter(Boolean);
+  'http://localhost:3000',
+  ...envOrigins,
+];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, curl, etc.)
+      // Allow requests with no origin (mobile apps, curl, health checks)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
+
+      const normalizedOrigin = origin.replace(/\/$/, '');
+
+      if (
+        process.env.FRONTEND_URL === '*' ||
+        allowedOrigins.includes(normalizedOrigin) ||
+        !process.env.NODE_ENV ||
+        process.env.NODE_ENV === 'development'
+      ) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+
+      return callback(new Error(`CORS blocked: Origin ${origin} is not allowed`));
     },
     credentials: true,
   })
 );
 
+// ─── Status & Health Check Routes ─────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'Hostel Room Allocation API is running 🚀',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Hostel API is healthy' });
+});
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
+const { router: authRouter, seedDefaultAdmin } = require('./routes/auth');
+app.use('/api/auth', authRouter);
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/rooms', require('./routes/rooms'));
 app.use('/api/allocations', require('./routes/allocations'));
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Hostel API is running' });
-});
 
 // ─── Error Handler ────────────────────────────────────────────────────────────
 app.use(require('./middleware/errorHandler'));
@@ -52,8 +77,9 @@ if (!MONGO_URI) {
 
 mongoose
   .connect(MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅  Connected to MongoDB');
+    await seedDefaultAdmin();
     app.listen(PORT, () => {
       console.log(`🚀  Server running on port ${PORT}`);
     });

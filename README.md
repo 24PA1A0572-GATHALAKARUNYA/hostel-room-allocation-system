@@ -19,6 +19,8 @@ A full-stack web application for managing hostel room allocations in a college. 
 
 ## Main Features
 
+- **Admin & Warden Authentication** — Secure JWT-based login with bcrypt password hashing, session persistence, protected routes, and quick 1-click evaluation access.
+  - **Default Admin Login**: Username: `admin` | Password: `admin123`
 - **Dashboard** — View total students, total rooms, occupied beds, and available beds at a glance.
 - **Student Management** — Add, view, edit, and delete student records (ID, name, department, year, phone, email).
 - **Room Management** — Add and manage rooms with bed capacity, floor, and type.
@@ -135,12 +137,88 @@ The app will open at `http://localhost:5173`.
 
 ---
 
-## Deployment (Render + MongoDB Atlas)
+## Free Cloud Deployment Guide
 
-1. Push the project to a GitHub repository.
-2. **Backend** — Create a new **Web Service** on [Render](https://render.com), point it to the `backend/` folder, set start command to `node server.js`, and add environment variables.
-3. **Frontend** — Create a new **Static Site** on Render, point it to the `frontend/` folder, set build command to `npm run build`, and publish directory to `dist/`. Set `VITE_API_URL` to your backend Render URL.
-4. Add your Render frontend URL to the backend's `FRONTEND_URL` environment variable so CORS works correctly.
+### Architecture Overview
+
+| Component | Platform | Free Tier |
+|---|---|---|
+| **Database** | [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) | Free forever (M0 512MB) |
+| **Backend API** | [Render](https://render.com) | Free Web Service (Node.js) |
+| **Frontend UI** | [Vercel](https://vercel.com) (or Render Static Site) | Free & ultra-fast for React/Vite |
+
+---
+
+### Step 1: Set up MongoDB Atlas (Free Cloud Database)
+
+1. Sign up at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas).
+2. Create a **Shared Cluster (M0 Free)**.
+3. Under **Security → Database Access**, create a user (e.g. `admin`) and set a secure password.
+4. Under **Security → Network Access**, click **Add IP Address** → Choose **Allow Access from Anywhere (`0.0.0.0/0`)** and confirm.
+5. In **Database → Clusters**, click **Connect** → **Drivers** (Node.js). Copy your connection string:
+   ```
+   mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/hosteldb?retryWrites=true&w=majority
+   ```
+   *(Replace `<username>` and `<password>` with your credentials).*
+
+---
+
+### Step 2: Deploy Backend to Render (Free Web Service)
+
+1. Sign up / Log in to [Render](https://render.com) using your GitHub account.
+2. Click **New +** → **Web Service**.
+3. Connect your GitHub repository (`hostel-room-allocation-system`).
+4. Configure the service settings:
+   - **Name**: `hostel-room-backend` (or your preferred name)
+   - **Region**: Choose the closest region (e.g. Singapore, Frankfurt, Oregon)
+   - **Root Directory**: `backend`
+   - **Runtime**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node server.js`
+   - **Instance Type**: `Free`
+5. Scroll down to **Environment Variables** and add:
+   - `PORT` = `5000`
+   - `NODE_ENV` = `production`
+   - `MONGO_URI` = *(your MongoDB Atlas connection string from Step 1)*
+   - `FRONTEND_URL` = `*` *(or your Vercel URL once frontend is deployed)*
+6. Click **Deploy Web Service**.
+7. Once deployment finishes, copy your live backend URL (e.g. `https://hostel-room-backend.onrender.com`).
+   - Open that URL in your browser: you should see `{"status":"ok","message":"Hostel Room Allocation API is running 🚀"}`.
+
+---
+
+### Step 3: Deploy Frontend to Vercel (Recommended, Free)
+
+1. Sign up / Log in to [Vercel](https://vercel.com) using your GitHub account.
+2. Click **Add New...** → **Project**.
+3. Import your GitHub repository.
+4. Configure project settings:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: Click *Edit* and select `frontend`
+   - **Build Command**: `npm run build` (default)
+   - **Output Directory**: `dist` (default)
+5. Under **Environment Variables**, add:
+   - `VITE_API_URL` = `https://your-backend-name.onrender.com/api`
+   *(Be sure to append `/api` at the end and use your actual Render backend URL!)*
+6. Click **Deploy**.
+7. Your frontend is now live at `https://your-project.vercel.app`!
+
+*(Optional Step)*: Return to your backend settings on Render, update `FRONTEND_URL` to your live Vercel domain (e.g., `https://your-project.vercel.app`), and click save.
+
+---
+
+### Alternative: Deploy Frontend on Render (Static Site)
+
+If you prefer keeping everything inside Render:
+1. On Render, click **New +** → **Static Site**.
+2. Connect your GitHub repo.
+3. Set:
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Publish Directory**: `dist`
+4. In Environment Variables, add:
+   - `VITE_API_URL` = `https://your-backend-name.onrender.com/api`
+5. Click **Create Static Site**.
 
 ---
 
